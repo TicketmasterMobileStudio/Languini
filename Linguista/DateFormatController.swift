@@ -29,7 +29,7 @@ class DateFormatController: NSObject {
         }
     }
 
-    var inputDate = Date() {
+    var inputDateInterval = TMDateInterval(start: Date(), end: Date()) {
         didSet {
             self.reloadGenerators()
         }
@@ -56,7 +56,7 @@ class DateFormatController: NSObject {
         }
 
         for generator in self.generators {
-            generator.generate(date: self.inputDate, tokenString: inputString)
+            generator.generate(dateInterval: self.inputDateInterval, tokenString: inputString)
             self.delegate?.dateFormatController(controller: self, generatorDidUpdate: generator)
         }
     }

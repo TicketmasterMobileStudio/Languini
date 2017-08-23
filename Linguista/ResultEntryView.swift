@@ -21,8 +21,7 @@ class ResultEntryView: NSView {
     
     @IBOutlet weak var deleteButton: NSButton!
     @IBOutlet weak var titleLabel: NSTextField!
-    @IBOutlet weak var exactValueLabel: NSTextField!
-    @IBOutlet weak var recommendedValueLabel: NSTextField!
+    @IBOutlet weak var valueLabel: NSTextField!
     @IBOutlet weak private var contentView: ResultEntryContentView!
 
     static func instanceFromNib(localeIdentifier: String) -> ResultEntryView {

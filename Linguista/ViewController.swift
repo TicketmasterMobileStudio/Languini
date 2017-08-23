@@ -11,6 +11,11 @@ import Foundation
 
 class ViewController: NSViewController {
 
+    @IBOutlet weak var multiDateCheckbox: NSButton!
+    @IBOutlet weak var formatStyleComboBox: NSComboBox!
+    @IBOutlet weak var startDatePicker: NSDatePicker!
+    @IBOutlet weak var endDatePicker: NSDatePicker!
+
     @IBOutlet weak var resultStackView: NSStackView!
     @IBOutlet weak var textField: NSTextField! {
         didSet {
@@ -46,6 +51,15 @@ class ViewController: NSViewController {
             NSApp.windows.forEach{
                 $0.makeFirstResponder(nil)
             }
+
+            self.textField.isHidden = true
+            self.endDatePicker.isHidden = true
+            self.startDatePicker.dateValue = Date()
+            self.endDatePicker.dateValue = Date()
+
+            self.configureComboBox()
+
+            self.updateResultsList()
         }
     }
 
@@ -62,13 +76,26 @@ class ViewController: NSViewController {
         self.removeRow(localeIdentifier: identifier)
     }
 
-    @IBAction func addTokenButtonSelected(_ sender: NSButton) {
+    private func configureComboBox() {
 
+        let date = self.startDatePicker.dateValue
+        let formatter = DateFormatter()
+        let formatStrings = ["EEMMMd", "EEMMMdha", "EEMMMdhmma", "EEMMMdyyyy", "EEMMMdhmmayyyy", "EEMMMdhayyyy"]
+        formatStrings.forEach{
+
+            formatter.setLocalizedDateFormatFromTemplate($0)
+
+            let example = formatter.string(from: date)
+            let obj = DateFormatterComboBoxRepresentation(formatString: $0, stringRepresentation: example)
+            self.formatStyleComboBox.addItem(withObjectValue: obj)
+        }
+
+        self.formatStyleComboBox.addItem(withObjectValue: "Custom...")
+        self.formatStyleComboBox.selectItem(at: 0)
     }
-    
+
     @IBAction func textFieldDidChange(_ sender: NSTextField) {
-        guard let text = sender.cell?.stringValue else { return }
-        self.dateFormatController.inputString = text
+        self.updateResultsList()
     }
 
     fileprivate func createResultsList() {
@@ -89,7 +116,7 @@ class ViewController: NSViewController {
     }
 
     private func removeRow(localeIdentifier: String) {
-        
+
         if let generator = self.dateFormatController.generators.filter({$0.localeIdentifier == localeIdentifier}).first {
             self.dateFormatController.removeGenerator(generator: generator)
         }
@@ -126,6 +153,42 @@ class ViewController: NSViewController {
             }
         }
     }
+
+    @IBAction func multiDateCheckboxDidChange(_ sender: NSButton) {
+
+        self.endDatePicker.isHidden = (sender.state != NSOnState)
+    }
+
+    @IBAction func startDatePickerDidChangeDates(_ sender: NSDatePicker) {
+        self.configureComboBox()
+        self.updateResultsList()
+    }
+
+    @IBAction func endDatePickerDidChangeDates(_ sender: NSDatePicker) {
+        self.updateResultsList()
+    }
+
+    @IBAction func dateFormatStyleComboBoxDidChangeValue(_ sender: NSComboBox) {
+        self.updateResultsList()
+    }
+
+    private func updateResultsList() {
+
+        if let rep = self.formatStyleComboBox.objectValueOfSelectedItem as? DateFormatterComboBoxRepresentation {
+            self.textField.isHidden = true
+            self.dateFormatController.inputString = rep.formatString
+        } else {
+            self.textField.isHidden = false
+            self.dateFormatController.inputString = self.textField.stringValue
+        }
+
+        if self.multiDateCheckbox.state == NSOnState {
+            self.dateFormatController.inputDateInterval = TMDateInterval(start: self.startDatePicker.dateValue, end: self.endDatePicker.dateValue)
+        } else {
+            self.dateFormatController.inputDateInterval = TMDateInterval(start: self.startDatePicker.dateValue, end: self.startDatePicker.dateValue)
+        }
+
+    }
 }
 
 extension ViewController: DateFormatControllerDelegate {
@@ -134,18 +197,17 @@ extension ViewController: DateFormatControllerDelegate {
 
     }
 
-    func dateFormatController(controller: DateFormatController, generatorDidUpdate: DateFormatGenerator) {
+    func dateFormatController(controller: DateFormatController, generatorDidUpdate generator: DateFormatGenerator) {
 
         for row in self.resultStackView.arrangedSubviews {
-            if let row = row as? ResultEntryView, row.localeIdentifier == generatorDidUpdate.localeIdentifier {
+            if let row = row as? ResultEntryView, row.localeIdentifier == generator.localeIdentifier {
                 let locale = Locale(identifier: row.localeIdentifier)
                 if let countryName = locale.localizedString(forLanguageCode: row.localeIdentifier), let regionCode = locale.regionCode {
                     row.titleLabel.stringValue = self.emojiFlag(countryCode: regionCode) + " " + countryName
                 } else {
                     row.titleLabel.stringValue = "N/A"
                 }
-                row.exactValueLabel.stringValue = generatorDidUpdate.result?.exact ?? "N/A"
-                row.recommendedValueLabel.stringValue = generatorDidUpdate.result?.recommended ?? "N/A"
+                row.valueLabel.stringValue = generator.result ?? "N/A"
             }
         }
     }
@@ -159,5 +221,25 @@ extension ViewController: DateFormatControllerDelegate {
             }
         }
         return string
+    }
+}
+
+private class DateFormatterComboBoxRepresentation: NSObject, NSCopying {
+
+    fileprivate let formatString: String
+
+    private var stringRepresentation: String = ""
+
+    private override var description: String {
+        return self.stringRepresentation
+    }
+
+    init(formatString: String, stringRepresentation: String) {
+        self.formatString = formatString
+        self.stringRepresentation = stringRepresentation
+    }
+
+    fileprivate func copy(with zone: NSZone? = nil) -> Any {
+        return DateFormatterComboBoxRepresentation(formatString: self.formatString, stringRepresentation: self.stringRepresentation)
     }
 }
