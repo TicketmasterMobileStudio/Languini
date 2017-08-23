@@ -230,7 +230,7 @@ private class DateFormatterComboBoxRepresentation: NSObject, NSCopying {
 
     private var stringRepresentation: String = ""
 
-    private override var description: String {
+    fileprivate override var description: String {
         return self.stringRepresentation
     }
 

@@ -103,7 +103,7 @@ extension TMDateInterval: NSSecureCoding {
 
     public convenience init?(coder aDecoder: NSCoder) {
 
-        guard let startDate = aDecoder.decodeObject(of: NSDate.self, forKey: CodingKeys.startDate) as? Date else {
+        guard let startDate = aDecoder.decodeObject(of: NSDate.self, forKey: CodingKeys.startDate) as Date? else {
             return nil
         }
 
